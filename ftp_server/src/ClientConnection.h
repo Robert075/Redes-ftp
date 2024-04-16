@@ -1,3 +1,4 @@
+#include <string>
 #if !defined ClientConnection_H
 #define ClientConnection_H
 
@@ -18,22 +19,26 @@ public:
 
     
 private:  
-   bool ok;  // This variable is a flag that avois that the
-	     // server listens if initialization errors occured.
-   
-    
-    FILE *fd;	 // C file descriptor. We use it to buffer the
-		 // control connection of the socket and it allows to
-		 // manage it as a C file using fprintf, fscanf, etc.
-    
+  std::string GetHostIp();
+  bool ok;  // This variable is a flag that avois that the
+     // server listens if initialization errors occured.
+  void PortCommand();
+  std::string PASVCommand();
   
-    char command[MAX_BUFF];  // Buffer for saving the command.
-    char arg[MAX_BUFF];      // Buffer for saving the arguments. 
-    
-    int data_socket;         // Data socket descriptor;
-    int control_socket;      // Control socket descriptor;
-    bool parar;
-    
+  FILE *fd;	 // C file descriptor. We use it to buffer the
+   // control connection of the socket and it allows to
+   // manage it as a C file using fprintf, fscanf, etc.
+  
+
+  char command[MAX_BUFF];  // Buffer for saving the command.
+  char arg[MAX_BUFF];      // Buffer for saving the arguments. 
+  
+
+  bool passive_mode_;
+  int data_socket;         // Data socket descriptor;
+  int control_socket;      // Control socket descriptor;
+  bool parar;
+  
    
 };
 
