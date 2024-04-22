@@ -150,25 +150,28 @@ void ClientConnection::WaitForRequests() {
       }
       else if (COMMAND("PORT")) {
         try {
+          std::cout << "PORT COMMAND\n";
           this->PortCommand();
           fprintf(this->fd, "200 OK.");
           fflush(this->fd);
         } catch (std::logic_error& exception) {
           std::cerr << exception.what() << "\n";
-          fprintf(this->fd, "425 Can't open data connection");
+          fprintf(this->fd, "425 Can't open data connection\n");
           fflush(this->fd);
         } 
       }
       else if (COMMAND("PASV")) {
         try {
+          std::cout << "ENTERING PASV\n";
           std::string msg = this->PASVCommand();
-          fprintf(this->fd, "%s", msg.c_str());
+          std::cout << "MESSAGE -> " << msg << "\n";
+          fprintf(this->fd, "%s\n", msg.c_str());
+          fflush(this->fd);
+          std::cout << "MESSAGE PRINT\n";
         } catch (std::logic_error& exception) {
           std::cerr << exception.what() << "\n";
-          fprintf(this->fd, "425 Can't open data connection");
+          fprintf(this->fd, "425 Can't open data connection\n");
         }
-        std::string msg = this->PASVCommand();
-        fprintf(this->fd, "227");
       } else if (COMMAND("STOR") ) {
         // To be implemented by students
       } else if (COMMAND("RETR")) {
@@ -181,6 +184,7 @@ void ClientConnection::WaitForRequests() {
         fscanf(fd, "%s", arg);
         fprintf(fd, "200 OK\n");   
       } else if (COMMAND("QUIT")) {
+        std::cout << "SALIENDO\n";
         fprintf(fd, "221 Service closing control connection. Logged out if appropriate.\n");
         close(data_socket);	
         parar=true;
@@ -231,10 +235,11 @@ std::string ClientConnection::GetHostIp() {
 
 std::string ClientConnection::PASVCommand() {
 	this->passive_mode_ = true;
-  std::string msg = "227 Entering Passive Mode (" + this->GetHostIp() + ",";
+  // std::string msg = "227 Entering Passive Mode (" + this->GetHostIp() + ",";
   this->data_socket = define_socket_TCP(2322); // port 2322 for data conections
-  uint8_t p1 = uint16_t(2322) >> 8;
-  uint8_t p2 = uint16_t(2322) % 256;
-  msg += std::to_string(p1) + std::to_string(p2);
-  return msg;
+  // uint8_t p1 = 9; // 8 bits más significativos de 2322 -> 00001001
+  // uint8_t p2 = 18; // 8 bits menos significativos de 2322 -> 00010010
+  // msg += std::to_string(p1) + "," + std::to_string(p2) + ")\n";
+  
+  return "227 Entering Passive Mode (127,0,0,1,9,18)";
 }

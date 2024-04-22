@@ -49,7 +49,7 @@ int define_socket_TCP(int port) {
   sin.sin_port = htons(port);
   
   if (bind(socket_fd, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
-    std::string err_msg = "Error al hacer bind con el puerto suministrado " + std::string(strerror(errno));
+    std::string err_msg = "Error al hacer bind con el puerto suministrado " + std::string(strerror(errno) + std::to_string(port));
     throw std::logic_error(err_msg);
   }
 
