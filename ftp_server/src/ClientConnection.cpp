@@ -150,7 +150,7 @@ void ClientConnection::WaitForRequests() {
         try {
           std::cout << "PORT COMMAND\n";
           this->PortCommand();
-          fprintf(this->fd, "200 OK.");
+          fprintf(this->fd, "200 OK\n");
           fflush(this->fd);
         } catch (std::logic_error& exception) {
           std::cerr << exception.what() << "\n";
@@ -170,6 +170,16 @@ void ClientConnection::WaitForRequests() {
           std::cerr << exception.what() << "\n";
           fprintf(this->fd, "425 Can't open data connection\n");
         }
+      } else if (COMMAND("SIZE")) { 
+          std::cout << "SIZE COMMAND" << "\n";
+          fscanf(fd, "%s", arg);
+          fprintf(fd, "502 Command not implemented.\n");
+          fflush(this->fd);
+      } else if (COMMAND("EPRT")) {
+          std::cout << "EPRT COMMAND" << "\n";
+          fscanf(fd, "%s", arg);
+          fprintf(fd, "502 Command not implemented.\n");
+          fflush(this->fd);
       } else if (COMMAND("STOR") ) {
         // To be implemented by students
       } else if (COMMAND("RETR")) {
