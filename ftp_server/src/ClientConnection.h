@@ -25,7 +25,7 @@ private:
   void PortCommand();
   void RetrCommand();
   void StorCommand();
-  std::string PASVCommand();
+  void PASVCommand();
   
   FILE *fd;	 // C file descriptor. We use it to buffer the
    // control connection of the socket and it allows to
