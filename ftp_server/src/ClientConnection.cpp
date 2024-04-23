@@ -210,11 +210,15 @@ void ClientConnection::WaitForRequests() {
 void ClientConnection::PortCommand() {
   int a1, a2, a3, a4; // Dividimos por trozos la dir. ip
   int p1, p2; // Dividimos por trozos el puerto
+  std::cout << "PRE READ PORT INFO\n";
   fscanf(this->fd, "%d,%d,%d,%d,%d,%d", &a1, &a2, &a3, &a4, &p1, &p2);
 
   uint32_t address = (a1 << 24) | (a2 << 16) | (a3 << 8) | a4;
   uint16_t port = (p1 << 8) | p2;
+  std::cout << "PRE CONNECT_TCP\n";
+  std::cout << "Address ->" << address << " Port -> " << port << "\n";
   this->data_socket = connect_TCP(address, port);
+  std::cout << "holasd\n";
   return;
 }
 
