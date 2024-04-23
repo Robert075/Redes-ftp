@@ -23,6 +23,7 @@ private:
   bool ok;  // This variable is a flag that avois that the
      // server listens if initialization errors occured.
   void PortCommand();
+  void RetrCommand();
   std::string PASVCommand();
   
   FILE *fd;	 // C file descriptor. We use it to buffer the

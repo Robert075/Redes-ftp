@@ -41,7 +41,6 @@
 
 
 
-
 ClientConnection::ClientConnection(int s) {
   int sock = (int)(s);
 
@@ -77,21 +76,20 @@ int connect_TCP(uint32_t address,  uint16_t  port) {
   struct sockaddr_in sin;
   memset(&sin, 0, sizeof(sin));
   sin.sin_family = AF_INET;
-  sin.sin_port = port; // DUDA. CREO QUE YA ESTÁ CONVERTIDO 
-  sin.sin_addr.s_addr = address; // DUDA. CREO QUE YA ESTA CONVERTIDO. SI FALLA USAR htons();
+  sin.sin_port = htons(port); 
+  sin.sin_addr.s_addr = htonl(address);
 
   int data_socket = socket(AF_INET, SOCK_STREAM, 0);
   if (data_socket < 0) {
     std::string msg_error = "Error al crear socket de datos " + std::string(strerror(errno));
     throw std::logic_error(msg_error);
   }
-
+  std::cout << "port -> " << port << "\n";
+  std::cout << "address -> " << address << "\n";
   if (connect(data_socket, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
     std::string msg_error = "Error al conectar " + std::string(strerror(errno));
     throw std::logic_error(msg_error);
-
   }
-
   return data_socket; // You must return the socket descriptor.
 }
 
@@ -175,7 +173,12 @@ void ClientConnection::WaitForRequests() {
       } else if (COMMAND("STOR") ) {
         // To be implemented by students
       } else if (COMMAND("RETR")) {
-       // To be implemented by students
+        try {
+          this->RetrCommand();
+        } catch (std::logic_error& exception) {
+          std::cerr << exception.what() << "\n";
+          fprintf(this->fd, "425 Can't open data connection\n");
+        }
       } else if (COMMAND("LIST")) {
        // To be implemented by students	
       } else if (COMMAND("SYST")) {
@@ -212,7 +215,7 @@ void ClientConnection::PortCommand() {
   int p1, p2; // Dividimos por trozos el puerto
   std::cout << "PRE READ PORT INFO\n";
   fscanf(this->fd, "%d,%d,%d,%d,%d,%d", &a1, &a2, &a3, &a4, &p1, &p2);
-
+  std::cout << "address: " << a1 << "." << a2 << "." << a3 << "." << a4 << std::endl;
   uint32_t address = (a1 << 24) | (a2 << 16) | (a3 << 8) | a4;
   uint16_t port = (p1 << 8) | p2;
   std::cout << "PRE CONNECT_TCP\n";
@@ -235,6 +238,27 @@ std::string ClientConnection::GetHostIp() {
   }
   return str;
 
+}
+
+void ClientConnection::RetrCommand() {
+  fscanf(fd, "%s", arg);
+  FILE *f = fopen(arg, "r");
+  if (f == NULL) {
+    fprintf(fd, "550 File not found\n");
+    return;
+  }
+  fprintf(fd, "150 File status okay; about to open data connection.\n");
+  while (!feof(f)) {
+    char buffer[MAX_BUFF];
+    size_t bytes_read = fread(buffer, 1, MAX_BUFF, f);
+    write(data_socket, buffer, bytes_read);
+    if (bytes_read < MAX_BUFF) {
+      break;
+    }
+  }
+  fprintf(fd, "226 Closing data connection. Requested file action successful.\n");
+  close(data_socket);
+  fclose(f);
 }
 
 std::string ClientConnection::PASVCommand() {
