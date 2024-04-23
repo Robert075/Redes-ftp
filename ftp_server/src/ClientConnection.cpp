@@ -181,7 +181,12 @@ void ClientConnection::WaitForRequests() {
           fprintf(fd, "502 Command not implemented.\n");
           fflush(this->fd);
       } else if (COMMAND("STOR") ) {
-        // To be implemented by students
+        try {
+          this->StorCommand();
+        } catch (std::logic_error& exception) {
+          std::cerr << exception.what() << "\n";
+          fprintf(this->fd, "425 Can't open data connection\n");
+        }
       } else if (COMMAND("RETR")) {
         try {
           this->RetrCommand();
@@ -262,6 +267,27 @@ void ClientConnection::RetrCommand() {
     char buffer[MAX_BUFF];
     size_t bytes_read = fread(buffer, 1, MAX_BUFF, f);
     write(data_socket, buffer, bytes_read);
+    if (bytes_read < MAX_BUFF) {
+      break;
+    }
+  }
+  fprintf(fd, "226 Closing data connection. Requested file action successful.\n");
+  close(data_socket);
+  fclose(f);
+}
+
+void ClientConnection::StorCommand() {
+  fscanf(fd, "%s", arg);
+  FILE *f = fopen(arg, "w");
+  if (f == NULL) {
+    fprintf(fd, "550 File not found\n");
+    return;
+  }
+  fprintf(fd, "150 File status okay; about to open data connection.\n");
+  while (1) {
+    char buffer[MAX_BUFF];
+    size_t bytes_read = read(data_socket, buffer, MAX_BUFF);
+    fwrite(buffer, 1, bytes_read, f);
     if (bytes_read < MAX_BUFF) {
       break;
     }

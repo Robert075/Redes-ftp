@@ -24,6 +24,7 @@ private:
      // server listens if initialization errors occured.
   void PortCommand();
   void RetrCommand();
+  void StorCommand();
   std::string PASVCommand();
   
   FILE *fd;	 // C file descriptor. We use it to buffer the
