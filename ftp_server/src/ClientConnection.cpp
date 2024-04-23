@@ -191,7 +191,12 @@ void ClientConnection::WaitForRequests() {
           fprintf(this->fd, "425 Can't open data connection\n");
         }
       } else if (COMMAND("LIST")) {
-       // To be implemented by students	
+        try {
+          this->ListCommand();
+        } catch (std::logic_error& exception) {
+          std::cerr << exception.what() << "\n";
+          fprintf(this->fd, "425 Can't open data connection\n");
+        }
       } else if (COMMAND("SYST")) {
            fprintf(fd, "215 UNIX Type: L8.\n");   
       } else if (COMMAND("TYPE")) {
@@ -294,11 +299,6 @@ void ClientConnection::StorCommand() {
 }
 
 void ClientConnection::PASVCommand() {
-  // std::string msg = "227 Entering Passive Mode (" + this->GetHostIp() + ",";
-  // this->data_socket = define_socket_TCP(2322); // port 2322 for data conections
-  // uint8_t p1 = 9; // 8 bits más significativos de 2322 -> 00001001
-  // uint8_t p2 = 18; // 8 bits menos significativos de 2322 -> 00010010
-  // msg += std::to_string(p1) + "," + std::to_string(p2) + ")\n";
   struct sockaddr_in fsin;
   socklen_t slen = sizeof(fsin);
   int s = define_socket_TCP(0);
@@ -310,40 +310,29 @@ void ClientConnection::PASVCommand() {
   data_socket = accept(s, (struct sockaddr*)&fsin, &slen);
 }
 
+void ClientConnection::ListCommand() {
+  DIR* d = opendir(".");
+  fprintf(fd, "125 List started OK.\n");
+  fflush(fd);
+  while (1) {
+    struct dirent* e = readdir(d);
+    if (e == NULL) {
+      break;
+    }
+    fprintf(fd, "%s\n", e->d_name);
+  }
+  fprintf(fd, "250 List completed succesfully.\n");
+  fflush(fd);
+}
 
-/**
- *
- * LIST (sin argumentos)
- * DIR *d = opendir(" ");
- * fprintf(code)
- * while (e = Readdir(d)) {
- *  send(data_socket, e->name), strlen(e->name), 0);
- *  fflush(fd);
- * }
- * fprintf(code)
- * 
- * PASSV
- * struct sockaddr_in fsin;
- * int s = define_socket_TCP(0);
- * getsockname(s, (sockaddr*)&fsin, sizeof(fsin));
- * port = ntohs(fsin.sin_port);
- * int p1 = port / 256;
- * int p2 = port % 256;
- * fprintf(fd, "227 Entering Passive Mode (127,0,0,1,%d,%d)\n", p1, p2);
- * 
- * En un lugar de La Mancha, de cuyo nombre no quiero acordarme, no ha mucho tiempo que vivía un hidalgo de los de lanza en astillero, adarga antigua, rocín flaco y galgo corrredor. 
- * Una olla de algo más vaca que carnero, salpicón las más noches, duelos y quebrantos los sábados, lantejas los viernes, algún palomino de añadidura los domingos, consumían las tres partes de su hacienda.
- * El resto della concluían sayo de velarte, calzas de velludo para las fiestas con sus pantuflos de lo mismo, los días de entre semana se honraba con su vellorí de lo más fino.
- * Tenía en su casa una ama que pasaba de los cuarenta, y una sobrina que no llegaba a los veinte, y un mozo de campo y plaza, que así ensillaba el rocín como tomaba la podadera.
- * Frisaba la edad de nuestro hidalgo con los cincuenta años, era de complexión recia, seco de carnes, enjuto de rostro, gran madrugador y amigo de la caza. Quieren decir que tenía el sobrenombre de Quijada, o Quesada, que en esto hay alguna diferencia en los autores que deste caso escriben; aunque, por conjeturas verosímiles, se deja entender que se llamaba Quejana.
- * Pero esto importa poco a nuestro cuento: basta que en la narración dél no se salga un punto de la verdad.
- * Es, pues, de saber que este sobredicho hidalgo, los ratos que estaba ocioso, que eran los más del año, se daba a leer libros de caballerías con tanta afición y gusto, que olvidó casi de todo punto el ejercicio de la caza, y aun la administración de su hacienda; y llegó a tanto su curiosidad y desatino en esto, que vendió muchas hanegas de tierra de sembradura para comprar libros de caballerías en que leer, y así llevó a su casa todos cuantos pudo haber dellos;
- * y de todos, ningunos le parecían tan bien como los que compuso el famoso Feliciano de Silva, porque la claridad de su prosa y aquellas entricadas razones suyas le parecían de perlas, y más cuando llegaba a leer aquellos requiebros y cartas de desafío, donde en muchas partes hallaba escrito: la razón de la sinrazón que a mi razón se hace, de tal manera mi razón enflaquece, que con razón me quejo de la vuestra fermosura.
- * Y también cuando leía: los altos cielos que de vuestra divinidad divinamente con las estrellas os fortifican, y os hacen merecedora del merecimiento que merece la vuestra grandeza.
- * Con estas razones perdía el pobre caballero el juicio, y desvelábase por entenderlas, y desentrañarles el sentido, que no se lo sacara ni las entendiera el mesmo Aristóteles, si resucitara para sólo ello.
- * No estaba muy bien con las heridas que don Belianis daba y recebía, porque se imaginaba que por grandes maestros que le hubiesen curado, no dejaría de tener el rostro y todo el cuerpo lleno de cicatrices y señales; pero con todo alababa en su autor aquel acabar su libro con la promesa de aquella inacabable aventura, y muchas veces le vino deseo de tomar la pluma y dalle fin al pie de la letra, como allí se promete; y sin duda alguna lo hiciera, y aun saliera con ello, si otros mayores y continuos pensamientos no se lo estorbaran.
- * 
- * Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought
- * I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation. Whenever I find myself growing grim about the mouth; whenever it is a damp, drizzly November in my soul; whenever I find myself involuntarily pausing before coffin warehouses, and bringing up the rear of every funeral I meet; and especially whenever my hypos get such an upper hand of me, that it requires a strong moral principle to prevent me from deliberately stepping into the street, and methodically knocking people’s hats off—then, I account it high time to get to sea as soon as I can. This is my substitute for pistol and ball. With a philosophical flourish Cato throws himself upon his sword; I quietly take to the ship. There is nothing surprising in this. If they but knew it
- * almost all. 
- */
+
+//
+//LIST (sin argumentos)
+//DIR *d = opendir(" ");
+//fprintf(code)
+//while (e = Readdir(d)) {
+// send(data_socket, e->name), strlen(e->name), 0);
+// fflush(fd);
+//}
+//fprintf(code)
+//

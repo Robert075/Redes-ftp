@@ -26,6 +26,7 @@ private:
   void RetrCommand();
   void StorCommand();
   void PASVCommand();
+  void ListCommand();
   
   FILE *fd;	 // C file descriptor. We use it to buffer the
    // control connection of the socket and it allows to
