@@ -284,9 +284,11 @@ void ClientConnection::StorCommand() {
     return;
   }
   fprintf(fd, "150 File status okay; about to open data connection.\n");
+  fflush(this->fd);
   while (1) {
     char buffer[MAX_BUFF];
     size_t bytes_read = read(data_socket, buffer, MAX_BUFF);
+    std::cout << "BYTES READ -> " << bytes_read << std::endl;
     fwrite(buffer, 1, bytes_read, f);
     if (bytes_read < MAX_BUFF) {
       break;
