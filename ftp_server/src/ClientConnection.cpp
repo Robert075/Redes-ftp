@@ -9,6 +9,7 @@
 
 
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <cstdarg>
@@ -160,7 +161,7 @@ void ClientConnection::WaitForRequests() {
       }
       else if (COMMAND("PASV")) {
         try {
-          PASVCommand();
+          this->PASVCommand();
           std::cout << "MESSAGE PRINT\n";
         } catch (std::logic_error& exception) {
           std::cerr << exception.what() << "\n";
@@ -258,73 +259,90 @@ std::string ClientConnection::GetHostIp() {
 
 void ClientConnection::RetrCommand() {
   fscanf(fd, "%s", arg);
-  FILE *f = fopen(arg, "r");
-  if (f == NULL) {
+  FILE *f = fopen(arg, "r"); // Abre el archivo 'arg'. Si no existe delvuelve nullptr
+  if (f == NULL) { // El no existe
     fprintf(fd, "550 File not found\n");
+    fflush(this->fd);
     return;
   }
-  fprintf(fd, "150 File status okay; about to open data connection.\n");
-  while (!feof(f)) {
+  fprintf(fd, "150 File status okay; about to open data connection.\n"); // Notifica al cliente que se van a empezar a enviar datos
+  fflush(this->fd);
+  while (1) {
     char buffer[MAX_BUFF];
-    size_t bytes_read = fread(buffer, 1, MAX_BUFF, f);
-    if (bytes_read == 0) {
+    size_t bytes_read = fread(buffer, 1, MAX_BUFF, f); // Lee los datos del archivo y los guarda en el buffer
+    if (bytes_read == 0) { // Si se leyeron 0 bytes, no queda nada por leer en el archivo
+      // No utilizamos (bytes_read < MAX_BUFF) porque al hacer pruebas, en ocasiones se envían paquetes con un tamaño menor
+      // pero esto no significa que no se vayan a enviar más datos
       break;
     }
-    write(data_socket, buffer, bytes_read);
+    write(data_socket, buffer, bytes_read); // Escribe los datos en el socket, es decir, los envía al cliente
   }
-  fprintf(fd, "226 Closing data connection. Requested file action successful.\n");
-  close(data_socket);
+  fprintf(fd, "226 Closing data connection. Requested file action successful.\n"); // Notifica al cliente de que se han recibido todos los datos
+  fflush(this->fd);
+  close(data_socket); // Cierra el socket de datos
   fclose(f);
 }
 
 void ClientConnection::StorCommand() {
   fscanf(fd, "%s", arg);
-  FILE *f = fopen(arg, "w");
-  if (f == NULL) {
+  FILE *f = fopen(arg, "w"); // Abre el archivo con nombre 'arg'. Si no existe, lo crea
+  if (f == NULL) { // No se pudo crear el archivo
     fprintf(fd, "550 File not found\n");
     return;
   }
-  fprintf(fd, "150 File status okay; about to open data connection.\n");
+  fprintf(fd, "150 File status okay; about to open data connection.\n"); // Notifica al cliente que se van a empezar a enviar datos
+  fflush(this->fd);
   while (1) {
     char buffer[MAX_BUFF];
-    size_t bytes_read = read(data_socket, buffer, MAX_BUFF);
+    size_t bytes_read = read(data_socket, buffer, MAX_BUFF); // Lee los datos que se enviaron por el socket y los guarda en el buffer
     if (bytes_read == 0) {
+      // Si se recibieron 0 bytes, se enteinde que n
       break;
     }
     fwrite(buffer, 1, bytes_read, f);
   }
   fprintf(fd, "226 Closing data connection. Requested file action successful.\n");
-  close(data_socket);
+  fflush(this->fd);
+  close(data_socket); // Cierra el socket de datos
   fclose(f);
 }
 
 void ClientConnection::PASVCommand() {
   struct sockaddr_in fsin;
   socklen_t slen = sizeof(fsin);
-  int s = define_socket_TCP(0);
+  int s = define_socket_TCP(0); // Se define un socket en un puerto aleatorio libre en el sistema
   getsockname(s, (sockaddr*)&fsin, &slen);
-  int port = ntohs(fsin.sin_port);
+  int port = ntohs(fsin.sin_port); // obtenemos el puerto
   int p1 = port / 256;
   int p2 = port % 256;
-  fprintf(fd, "227 Entering Passive Mode (127,0,0,1,%d,%d)\n", p1, p2);
-  data_socket = accept(s, (struct sockaddr*)&fsin, &slen);
+  fprintf(fd, "227 Entering Passive Mode (127,0,0,1,%d,%d)\n", p1, p2); // enviamos ip y puerto en el formato adecuado
+  fflush(this->fd);
+  data_socket = accept(s, (struct sockaddr*)&fsin, &slen); // Esperamos la respuesta del cliente para realizar la conexión TCP
+  return;
 }
 
 void ClientConnection::ListCommand() {
   DIR* d = opendir(".");
   fprintf(fd, "125 List started OK.\n");
   fflush(fd);
-  while (1) {
-    struct dirent* e = readdir(d);
-    if (e == NULL) {
-      break;
+  struct dirent* entry;
+  FILE* data_file = fdopen(this->data_socket, "wb");
+  while ((entry = readdir(d)) != NULL) { // Mientras obtengamos un nombre de archivo/directorio
+    std::string dir_name(entry->d_name);
+    if (!(dir_name == "." || dir_name == "..")) {
+      dir_name += "\x0d\x0a";
+      // write(this->data_socket, dir_name.c_str(), dir_name.length());
+      fwrite(dir_name.c_str(), 1, dir_name.length(), data_file);
+      
     }
-    fprintf(fd, "%s\n", e->d_name);
   }
+  fflush(data_file);
+  close(data_socket);
+  closedir(d);
   fprintf(fd, "250 List completed succesfully.\n");
   fflush(fd);
+  return;
 }
-
 
 //
 //LIST (sin argumentos)
@@ -336,3 +354,4 @@ void ClientConnection::ListCommand() {
 //}
 //fprintf(code)
 //
+
