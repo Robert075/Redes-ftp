@@ -3,9 +3,13 @@
 //                      
 //                     2º de grado de Ingeniería Informática
 //                       
-//              This class processes an FTP transaction.
+//                     This class processes an FTP transaction.
+//
+//        Roberto Giménez Fuentes  (alu0101540894@ull.edu.es)
+//        Eric Rios Hamilton        (eric.rios.41@ull.edu.es)
 // 
 //****************************************************************************
+
 
 
 
@@ -41,14 +45,17 @@
 #include "ClientConnection.h"
 
 
-
+/**
+  * @brief Constructor of the class
+  *
+  * @param s the socket descriptor for the connection
+  */
 ClientConnection::ClientConnection(int s) {
   int sock = (int)(s);
 
   char buffer[MAX_BUFF];
 
   control_socket = s;
-  // Check the Linux man pages to know what fdopen does.
   fd = fdopen(s, "a+");
   if (fd == NULL){
     std::cout << "Connection closed" << std::endl;
@@ -65,14 +72,21 @@ ClientConnection::ClientConnection(int s) {
   parar = false;  
 };
 
-
+/**
+  * @brief Destructor of the class
+  *
+  */
 ClientConnection::~ClientConnection() {
  	fclose(fd);
 	close(control_socket); 
-  
 }
 
-
+/**
+  * @brief Define a TCP socket
+  *
+  * @param port the port to bind the socket
+  * @return the socket descriptor of the new socket
+  */
 int connect_TCP(uint32_t address,  uint16_t  port) {
   struct sockaddr_in sin;
   memset(&sin, 0, sizeof(sin));
@@ -94,11 +108,10 @@ int connect_TCP(uint32_t address,  uint16_t  port) {
   return data_socket; // You must return the socket descriptor.
 }
 
-
-
-
-
-
+/**
+  * @brief Stop the client connection
+  *
+  */
 void ClientConnection::stop() {
     close(data_socket);
     close(control_socket);
@@ -106,19 +119,13 @@ void ClientConnection::stop() {
   
 }
 
-
-
-
-
     
 #define COMMAND(cmd) strcmp(command, cmd)==0
 
-// This method processes the requests.
-// Here you should implement the actions related to the FTP commands.
-// See the example for the USER command.
-// If you think that you have to add other commands feel free to do so. You 
-// are allowed to add auxiliary methods if necessary.
-
+/**
+  * @brief Wait for requests from the client
+  *
+  */
 void ClientConnection::WaitForRequests() {
     if (!ok) {
       return;
@@ -134,7 +141,7 @@ void ClientConnection::WaitForRequests() {
         fprintf(fd, "331 User name ok, need password\n");
       }
       else if (COMMAND("PWD")) {
-
+        
       }
       else if (COMMAND("PASS")) {
         std::cout << "CONTRASEÑA INTRODUCIDA\n";
@@ -213,20 +220,16 @@ void ClientConnection::WaitForRequests() {
 	    fprintf(fd, "502 Command not implemented.\n"); fflush(fd);
 	    printf("Comando : %s %s\n", command, arg);
 	    printf("Error interno del servidor\n");
-	
-      }
-      
+      } 
     }
-    
     fclose(fd);
-
-    
     return;
-  
-
 };
 
-
+/**
+  * @brief Establish a connection with the client
+  *
+  */
 void ClientConnection::PortCommand() {
   int a1, a2, a3, a4; // Dividimos por trozos la dir. ip
   int p1, p2; // Dividimos por trozos el puerto
@@ -242,6 +245,11 @@ void ClientConnection::PortCommand() {
   return;
 }
 
+/**
+  * @brief Get the IP of the host
+  *
+  * @return std::string
+  */
 std::string ClientConnection::GetHostIp() {
   struct hostent* he;
   char ownIP[16];
@@ -257,6 +265,10 @@ std::string ClientConnection::GetHostIp() {
 
 }
 
+/**
+  * @brief Retrieve a file from the server
+  *
+  */
 void ClientConnection::RetrCommand() {
   fscanf(fd, "%s", arg);
   FILE *f = fopen(arg, "r"); // Abre el archivo 'arg'. Si no existe delvuelve nullptr
@@ -283,6 +295,10 @@ void ClientConnection::RetrCommand() {
   fclose(f);
 }
 
+/**
+  * @brief Store a file in the server
+  *
+  */
 void ClientConnection::StorCommand() {
   fscanf(fd, "%s", arg);
   FILE *f = fopen(arg, "w"); // Abre el archivo con nombre 'arg'. Si no existe, lo crea
@@ -307,6 +323,10 @@ void ClientConnection::StorCommand() {
   fclose(f);
 }
 
+/**
+  * @brief Turn on passive mode
+  *
+  */
 void ClientConnection::PASVCommand() {
   struct sockaddr_in fsin;
   socklen_t slen = sizeof(fsin);
@@ -321,6 +341,10 @@ void ClientConnection::PASVCommand() {
   return;
 }
 
+/**
+  * @brief List the files in the directory
+  *
+  */
 void ClientConnection::ListCommand() {
   DIR* d = opendir(".");
   fprintf(fd, "125 List started OK.\n");
@@ -331,9 +355,7 @@ void ClientConnection::ListCommand() {
     std::string dir_name(entry->d_name);
     if (!(dir_name == "." || dir_name == "..")) {
       dir_name += "\x0d\x0a";
-      // write(this->data_socket, dir_name.c_str(), dir_name.length());
-      fwrite(dir_name.c_str(), 1, dir_name.length(), data_file);
-      
+      fwrite(dir_name.c_str(), 1, dir_name.length(), data_file);      
     }
   }
   fflush(data_file);
@@ -343,15 +365,3 @@ void ClientConnection::ListCommand() {
   fflush(fd);
   return;
 }
-
-//
-//LIST (sin argumentos)
-//DIR *d = opendir(" ");
-//fprintf(code)
-//while (e = Readdir(d)) {
-// send(data_socket, e->name), strlen(e->name), 0);
-// fflush(fd);
-//}
-//fprintf(code)
-//
-

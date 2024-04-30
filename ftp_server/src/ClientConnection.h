@@ -1,3 +1,15 @@
+//****************************************************************************
+//                         REDES Y SISTEMAS DISTRIBUIDOS
+//                      
+//                     2º de grado de Ingeniería Informática
+//                       
+//                    Header of the ClientConnection class
+//
+//        Roberto Giménez Fuentes  (alu0101540894@ull.edu.es)
+//        Eric Rios Hamilton        (eric.rios.41@ull.edu.es)
+// 
+//****************************************************************************
+
 #include <string>
 #if !defined ClientConnection_H
 #define ClientConnection_H
@@ -20,7 +32,7 @@ public:
     
 private:  
   std::string GetHostIp();
-  bool ok;  // This variable is a flag that avois that the
+  bool ok;  // This variable is a flag that avoids that the
      // server listens if initialization errors occured.
   void PortCommand();
   void RetrCommand();

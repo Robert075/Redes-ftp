@@ -4,8 +4,12 @@
 //                     2º de grado de Ingeniería Informática
 //                       
 //                        Main class of the FTP server
+//
+//        Roberto Giménez Fuentes  (alu0101540894@ull.edu.es)
+//        Eric Rios Hamilton        (eric.rios.41@ull.edu.es)
 // 
 //****************************************************************************
+
 
 #include <cerrno>
 #include <cstring>
@@ -32,8 +36,14 @@
 #include "ClientConnection.h"
 
 
+/**
+  * @brief Define a TCP socket
+  *
+  * @param port: port number
+  * 
+  * @return int: socket file descriptor
+  */
 int define_socket_TCP(int port) {
-  // Include the code for defining the socket.
   struct sockaddr_in sin;
   int socket_fd;
   socket_fd = socket(AF_INET, SOCK_STREAM, 0);
